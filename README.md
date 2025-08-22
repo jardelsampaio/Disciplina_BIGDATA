@@ -1,108 +1,116 @@
-# Projeto: Pipeline de Dados E-commerce Brasil
+# 🛒 Pipeline de Dados E-commerce Brasil
 
-Este projeto implementa um pipeline de dados para coletar, processar, transmitir e consultar informações de pedidos de um e-commerce, utilizando **Python, Apache Kafka, Apache Spark e PostgreSQL**.
+Pipeline moderno para ingestão e análise de pedidos de e-commerce no Brasil.  
+O fluxo integra **Kafka**, **Spark** e **PostgreSQL** para transformar dados brutos de vendas em **insights acionáveis**.
 
 ---
 
-## Estrutura do Projeto
+## 🔎 Visão Geral
+
+O objetivo é automatizar a jornada dos dados:
+
+1. **Coleta** — pedidos extraídos da API da loja (ou dataset sintético incluído).  
+2. **Ingestão** — dados enviados para o **Kafka**.  
+3. **Processamento** — **Spark** organiza, enriquece e valida as mensagens.  
+4. **Armazenamento** — registros consolidados no **PostgreSQL**.  
+5. **Análise** — consultas SQL ou ferramentas de BI exploram os dados tratados.
+
 ```
-├── data/
-│   └── pedidos.csv                 # Dados históricos extraídos da API da loja
-├── src/
-│   ├── extract_orders.py            # Extrai pedidos da API da loja e salva em CSV
-│   ├── spark_kafka_producer.py      # Processa dados com Spark e envia para o Kafka
-│   ├── kafka_consumer.py            # Consome dados do Kafka e armazena no PostgreSQL
-│   ├── postgres_query_tool.py       # Ferramenta de consulta aos dados no PostgreSQL
-│   ├── config.py                    # Configurações de conexão (API, Kafka, PostgreSQL)
+Loja/API → Kafka → Spark → PostgreSQL → BI/Relatórios
+```
+
+---
+
+## 📂 Estrutura do Projeto
+```
+├── data/                 
+│   └── pedidos.csv            # Dados sintéticos de exemplo (50k linhas)
+├── src/                      
+│   ├── extract_orders.py      # Exemplo de extração (mock/API)
+│   ├── spark_kafka_producer.py# Envia pedidos CSV para Kafka via Spark
+│   ├── kafka_consumer.py      # Consome Kafka e grava no PostgreSQL
+│   ├── postgres_query_tool.py # Consultas pré-definidas no PostgreSQL
+│   ├── config.py              # Variáveis de conexão (Kafka, Postgres, API)
 │   └── utils/
-│       └── logger.py                # Utilitário de logging
-├── requirements.txt                 # Dependências Python
-├── docker-compose.yaml              # Sobe Kafka e Zookeeper via Docker
-└── README.md                        # Este arquivo
+│       └── logger.py          # Logger padronizado
+├── docker-compose.yaml        # Infra: Kafka, Zookeeper e Postgres
+├── requirements.txt           # Dependências Python
+└── README.md
 ```
 
 ---
 
-## Pré-requisitos
-- Python **3.8+**
-- Docker e Docker Compose
-- Instância PostgreSQL (local ou em nuvem, ex.: RDS)
+## ⚙️ Pré-requisitos
+
+- Python **3.8+**  
+- Docker + Docker Compose  
+- Spark instalado localmente  
+- Cliente PostgreSQL (ou DBeaver, pgAdmin)  
 
 ---
 
-## Instalação
+## 🚀 Como Executar
 
-Clone o repositório:
+### 1) Clonar e instalar dependências
 ```bash
 git clone <url-do-repo>
-cd pipeline-ecommerce
-```
-
-Instale as dependências Python:
-```bash
+cd pipeline_ecommerce
 pip install -r requirements.txt
 ```
 
-Configure o PostgreSQL:  
-Edite o arquivo `src/config.py` e insira sua string de conexão do banco em `POSTGRES_CONN`.
-
----
-
-## Subindo o Kafka com Docker
-
-Na raiz do projeto, execute:
+### 2) Subir Kafka e Postgres
 ```bash
 docker-compose up -d
 ```
+> Postgres padrão: `postgresql://app:app@localhost:5432/ecommerce`
 
-Isso irá iniciar os serviços do **Zookeeper** e do **Kafka**.
-
----
-
-## Pipeline de Execução
-
-### 1) Extração dos dados históricos
-```bash
-python src/extract_orders.py
-```
-Extrai dados da API da loja e salva em `data/pedidos.csv`.
-
-### 2) Processamento e envio para o Kafka
+### 3) Produzir mensagens no Kafka
 ```bash
 spark-submit   --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1   src/spark_kafka_producer.py   --csv data/pedidos.csv --topic pedidos_ecommerce
 ```
 
-### 3) Consumo e armazenamento no PostgreSQL
+### 4) Consumir e gravar no Postgres
 ```bash
 python src/kafka_consumer.py --topic pedidos_ecommerce --group ecommerce-consumers
 ```
 
-### 4) Consulta aos dados no PostgreSQL
+### 5) Consultar os dados
 ```bash
-python src/postgres_query_tool.py
+# Top 10 produtos
+python src/postgres_query_tool.py top-products --limit 10 --out top10_produtos.csv
+
+# Top 10 cidades
+python src/postgres_query_tool.py top-cities --limit 10 --out top10_cidades.csv
 ```
-Permite consultar e salvar queries sobre os dados armazenados.
 
 ---
 
-## Dependências
-- requests  
-- pandas  
-- kafka-python  
-- psycopg2  
-- pyspark  
+## 📊 Exemplos de Análises
+
+- Produtos mais vendidos por região.  
+- Receita acumulada por categoria.  
+- Desempenho de canais de venda (Site, App, Marketplace).  
+- Status dos pedidos (Pago, Pendente, Cancelado, Reembolsado).  
 
 ---
 
-## Observações
-- O arquivo `data/pedidos.csv` pode ser grande. Ele contém os dados históricos extraídos da API da loja.  
-- O utilitário de logging (`src/utils/logger.py`) padroniza logs em todos os scripts.  
-- As configurações de conexão (API, Kafka, PostgreSQL) estão centralizadas em `src/config.py`.  
+## 🛠️ Tecnologias
+
+- **Python** – Scripts de extração, consumo e consultas.  
+- **Apache Spark** – Processamento em lote e integração com Kafka.  
+- **Apache Kafka** – Streaming de dados de pedidos.  
+- **PostgreSQL** – Armazenamento analítico e consultas.  
+- **Docker Compose** – Orquestração de Kafka, Zookeeper e Postgres.  
 
 ---
 
-## Instalação de Dependências
-Para instalar todas as dependências necessárias, execute:
-```bash
-pip install -r requirements.txt
-```
+## 📌 Roadmap
+
+- [ ] Implementar ingestão contínua com Spark Structured Streaming.  
+- [ ] Criar dashboards em Power BI / Superset.  
+- [ ] Adicionar camada de qualidade dos dados (validação e alerta).  
+- [ ] Automatizar pipeline no Airflow.  
+
+---
+
+✨ Desenvolvido como projeto educacional para **engenharia de dados aplicada a e-commerce**.  
