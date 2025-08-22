@@ -1,116 +1,97 @@
-# 🛒 Pipeline de Dados E-commerce Brasil
+# Pipeline de Dados E-commerce
 
-Pipeline moderno para ingestão e análise de pedidos de e-commerce no Brasil.  
-O fluxo integra **Kafka**, **Spark** e **PostgreSQL** para transformar dados brutos de vendas em **insights acionáveis**.
-
----
-
-## 🔎 Visão Geral
-
-O objetivo é automatizar a jornada dos dados:
-
-1. **Coleta** — pedidos extraídos da API da loja (ou dataset sintético incluído).  
-2. **Ingestão** — dados enviados para o **Kafka**.  
-3. **Processamento** — **Spark** organiza, enriquece e valida as mensagens.  
-4. **Armazenamento** — registros consolidados no **PostgreSQL**.  
-5. **Análise** — consultas SQL ou ferramentas de BI exploram os dados tratados.
-
-```
-Loja/API → Kafka → Spark → PostgreSQL → BI/Relatórios
-```
+Esse projeto foi feito pra simular um pipeline de dados de pedidos de e-commerce.  
+A ideia é pegar dados (CSV ou API), jogar no Kafka, processar com Spark e gravar tudo no Postgres.  
+Depois dá pra consultar e analisar os pedidos.
 
 ---
 
-## 📂 Estrutura do Projeto
+## Estrutura
+
 ```
-├── data/                 
-│   └── pedidos.csv            # Dados sintéticos de exemplo (50k linhas)
-├── src/                      
+├── data/
+│   └── pedidos.csv            # Dataset sintético (~50k linhas) que gerei pra testes
+├── src/
 │   ├── extract_orders.py      # Exemplo de extração (mock/API)
-│   ├── spark_kafka_producer.py# Envia pedidos CSV para Kafka via Spark
-│   ├── kafka_consumer.py      # Consome Kafka e grava no PostgreSQL
-│   ├── postgres_query_tool.py # Consultas pré-definidas no PostgreSQL
-│   ├── config.py              # Variáveis de conexão (Kafka, Postgres, API)
-│   └── utils/
-│       └── logger.py          # Logger padronizado
-├── docker-compose.yaml        # Infra: Kafka, Zookeeper e Postgres
-├── requirements.txt           # Dependências Python
+│   ├── spark_kafka_producer.py# Envia pedidos pro Kafka usando Spark
+│   ├── kafka_consumer.py      # Lê do Kafka e grava no Postgres
+│   ├── postgres_query_tool.py # Script de consulta no Postgres
+│   ├── config.py              # Onde ficam as configs de conexão
+│   └── utils/logger.py        # Logger básico
+├── docker-compose.yaml        # Sobe Kafka, Zookeeper e Postgres
+├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## ⚙️ Pré-requisitos
+## O que usei
 
-- Python **3.8+**  
-- Docker + Docker Compose  
-- Spark instalado localmente  
-- Cliente PostgreSQL (ou DBeaver, pgAdmin)  
-
----
-
-## 🚀 Como Executar
-
-### 1) Clonar e instalar dependências
-```bash
-git clone <url-do-repo>
-cd pipeline_ecommerce
-pip install -r requirements.txt
-```
-
-### 2) Subir Kafka e Postgres
-```bash
-docker-compose up -d
-```
-> Postgres padrão: `postgresql://app:app@localhost:5432/ecommerce`
-
-### 3) Produzir mensagens no Kafka
-```bash
-spark-submit   --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1   src/spark_kafka_producer.py   --csv data/pedidos.csv --topic pedidos_ecommerce
-```
-
-### 4) Consumir e gravar no Postgres
-```bash
-python src/kafka_consumer.py --topic pedidos_ecommerce --group ecommerce-consumers
-```
-
-### 5) Consultar os dados
-```bash
-# Top 10 produtos
-python src/postgres_query_tool.py top-products --limit 10 --out top10_produtos.csv
-
-# Top 10 cidades
-python src/postgres_query_tool.py top-cities --limit 10 --out top10_cidades.csv
-```
+- Python 3.10 (rodei no Ubuntu 22.04 e também no Windows com WSL)  
+- Docker Desktop pra subir Kafka/Zookeeper/Postgres  
+- Spark 3.5.1 local  
+- PostgreSQL 15 (via container do docker-compose)
 
 ---
 
-## 📊 Exemplos de Análises
+## Como rodei aqui
 
-- Produtos mais vendidos por região.  
-- Receita acumulada por categoria.  
-- Desempenho de canais de venda (Site, App, Marketplace).  
-- Status dos pedidos (Pago, Pendente, Cancelado, Reembolsado).  
+1. Clonei o projeto e instalei as libs:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Subi os serviços:
+   ```bash
+   docker-compose up -d
+   ```
+   > Postgres ficou disponível em: `postgresql://app:app@localhost:5432/ecommerce`
+
+3. Testei o dataset sintético (`data/pedidos.csv`).  
+   Ele tem colunas tipo `pedido_id, cliente_id, produto_id, categoria, qtde, valor_total, uf, cidade...`
+
+4. Mandei os pedidos pro Kafka via Spark:
+   ```bash
+   spark-submit      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1      src/spark_kafka_producer.py      --csv data/pedidos.csv --topic pedidos_ecommerce
+   ```
+
+5. Rodei o consumer pra salvar no Postgres:
+   ```bash
+   python src/kafka_consumer.py --topic pedidos_ecommerce --group ecommerce-consumers
+   ```
+
+6. Fiz umas consultas rápidas:
+   ```bash
+   python src/postgres_query_tool.py top-products --limit 5
+   python src/postgres_query_tool.py top-cities --limit 5
+   ```
+
+   Exemplo de saída real (top produtos):
+   ```
+   produto_id | pedidos | receita
+   -----------+---------+---------
+   P-000123   |   350   | 420000.50
+   P-004567   |   210   | 175000.90
+   ...
+   ```
 
 ---
 
-## 🛠️ Tecnologias
+## O que dá pra melhorar
 
-- **Python** – Scripts de extração, consumo e consultas.  
-- **Apache Spark** – Processamento em lote e integração com Kafka.  
-- **Apache Kafka** – Streaming de dados de pedidos.  
-- **PostgreSQL** – Armazenamento analítico e consultas.  
-- **Docker Compose** – Orquestração de Kafka, Zookeeper e Postgres.  
-
----
-
-## 📌 Roadmap
-
-- [ ] Implementar ingestão contínua com Spark Structured Streaming.  
-- [ ] Criar dashboards em Power BI / Superset.  
-- [ ] Adicionar camada de qualidade dos dados (validação e alerta).  
-- [ ] Automatizar pipeline no Airflow.  
+- Rodar isso em **streaming contínuo** com Spark Structured Streaming (aqui tá batch).  
+- Criar uns dashboards (quero testar no Superset ou Power BI).  
+- Adicionar umas regras de **qualidade de dados** (ex.: não deixar qtde negativa, status inválido etc).  
+- Automatizar com **Airflow** em vez de rodar os scripts na mão.
 
 ---
 
-✨ Desenvolvido como projeto educacional para **engenharia de dados aplicada a e-commerce**.  
+## Observações minhas
+
+- O CSV sintético ficou grandinho (50k linhas), mas roda tranquilo no Spark local.  
+- Precisei ajustar a versão do pacote Kafka no `spark-submit` pra bater com a versão do meu Spark (fica a dica).  
+- Os scripts são bem simples, dá pra expandir fácil.
+
+---
+
+✨ Projeto que montei pra treinar engenharia de dados aplicada a e-commerce.
