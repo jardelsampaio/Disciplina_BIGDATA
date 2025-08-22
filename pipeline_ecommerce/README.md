@@ -2,8 +2,6 @@
 
 Este projeto implementa um pipeline de dados para coletar, processar, transmitir e consultar informações de pedidos de um e-commerce, utilizando **Python, Apache Kafka, Apache Spark e PostgreSQL**.
 
----
-
 ## Estrutura do Projeto
 ```
 ├── data/
@@ -17,92 +15,44 @@ Este projeto implementa um pipeline de dados para coletar, processar, transmitir
 │   └── utils/
 │       └── logger.py                # Utilitário de logging
 ├── requirements.txt                 # Dependências Python
-├── docker-compose.yaml              # Sobe Kafka e Zookeeper via Docker
+├── docker-compose.yaml              # Sobe Kafka, Zookeeper e PostgreSQL via Docker
 └── README.md                        # Este arquivo
 ```
-
----
 
 ## Pré-requisitos
 - Python **3.8+**
 - Docker e Docker Compose
-- Instância PostgreSQL (local ou em nuvem, ex.: RDS)
-
----
+- Instância PostgreSQL (é criada via docker-compose)
 
 ## Instalação
-
-Clone o repositório:
 ```bash
 git clone <url-do-repo>
-cd pipeline-ecommerce
-```
-
-Instale as dependências Python:
-```bash
+cd pipeline_ecommerce
 pip install -r requirements.txt
 ```
 
-Configure o PostgreSQL:  
-Edite o arquivo `src/config.py` e insira sua string de conexão do banco em `POSTGRES_CONN`.
-
----
-
-## Subindo o Kafka com Docker
-
-Na raiz do projeto, execute:
+## Subir infraestrutura (Kafka/Zookeeper/Postgres)
 ```bash
 docker-compose up -d
 ```
 
-Isso irá iniciar os serviços do **Zookeeper** e do **Kafka**.
-
----
-
-## Pipeline de Execução
-
-### 1) Extração dos dados históricos
-```bash
-python src/extract_orders.py
-```
-Extrai dados da API da loja e salva em `data/pedidos.csv`.
-
-### 2) Processamento e envio para o Kafka
+## Pipeline — Passo a passo
+1. **(Opcional)** Extrair pedidos reais da API da loja (exemplo no `extract_orders.py`)  
+   > Neste bundle já existe um `data/pedidos.csv` sintético para testes.
+2. **Enviar para Kafka via Spark (batch)**  
 ```bash
 spark-submit   --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1   src/spark_kafka_producer.py   --csv data/pedidos.csv --topic pedidos_ecommerce
 ```
-
-### 3) Consumo e armazenamento no PostgreSQL
+3. **Consumir do Kafka e gravar no PostgreSQL**
 ```bash
 python src/kafka_consumer.py --topic pedidos_ecommerce --group ecommerce-consumers
 ```
-
-### 4) Consulta aos dados no PostgreSQL
+4. **Consultar no PostgreSQL**
 ```bash
-python src/postgres_query_tool.py
+python src/postgres_query_tool.py top-products --limit 10 --out top10_produtos.csv
 ```
-Permite consultar e salvar queries sobre os dados armazenados.
 
----
-
-## Dependências
-- requests  
-- pandas  
-- kafka-python  
-- psycopg2  
-- pyspark  
-
----
-
-## Observações
-- O arquivo `data/pedidos.csv` pode ser grande. Ele contém os dados históricos extraídos da API da loja.  
-- O utilitário de logging (`src/utils/logger.py`) padroniza logs em todos os scripts.  
-- As configurações de conexão (API, Kafka, PostgreSQL) estão centralizadas em `src/config.py`.  
-
----
-
-## Instalação de Dependências
-Para instalar todas as dependências necessárias, execute:
-```bash
-pip install -r requirements.txt
-```
+## Notas
+- Ajuste a versão do pacote Kafka no `spark-submit` conforme sua versão do Spark.
+- A conexão padrão do Postgres (docker-compose) é: `postgresql://app:app@localhost:5432/ecommerce`.
+- Variáveis podem ser configuradas via `.env` ou `src/config.py`.
